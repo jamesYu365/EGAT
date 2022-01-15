@@ -30,7 +30,7 @@ class GraphAttentionLayer(nn.Module):
         e=e*edge_attr
         zero_vec = -9e15*torch.ones_like(e)
         e = torch.where(edge_attr > 0, e, zero_vec)
-        e=F.softmax(e, dim=1)
+        e=F.softmax(e, dim=2)
         #e=torch.exp(e)
         
         #e=DSN(e)
@@ -54,6 +54,7 @@ class GraphAttentionLayer(nn.Module):
         # self.a.shape (2 * out_feature, 1)
         # Wh1&2.shape (N, 1)
         # e.shape (N, N)
+        #加性注意力机制使用全连接网络计算注意力系数
         Wh1 = torch.matmul(Wh, self.a[:self.out_features, :])
         Wh2 = torch.matmul(Wh, self.a[self.out_features:, :])
         # broadcast add

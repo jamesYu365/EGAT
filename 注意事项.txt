@@ -1,0 +1,7 @@
+layer.py里面的注意
+e=F.softmax(e, dim=1)
+#e=torch.exp(e)
+#e=DSN(e)
+这三行的主要作用是标准化，使用exp和DSN会导致梯度消失
+单独使用DSN会出现inf和nan
+推荐使用softmax，dim取2最好

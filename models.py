@@ -42,7 +42,6 @@ class GAT(nn.Module):
             temp_x.append(inn_x)
         x = torch.cat(temp_x, dim=1)#起始层
         
-        
         # #中间层
         # x = F.dropout(x, self.dropout, training=self.training)#中间层
         # temp_x=[]
