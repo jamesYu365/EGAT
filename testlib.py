@@ -36,8 +36,11 @@ graph=nx.from_dict_of_lists(edges,create_using=nx.DiGraph)
 adj=nx.adjacency_matrix(graph)
 adj=adj.todense()
 t=torch.FloatTensor(adj)
+
+
+
 #%%
-def DSN22(t):
+def DSN2(t):
     a=t.sum(dim=1,keepdim=True)
     b=t.sum(dim=0,keepdim=True)
     lamb=torch.cat([a.squeeze(),b.squeeze()],dim=0).max()
@@ -51,23 +54,27 @@ def DSN22(t):
     ttmatrix=torch.where(t>0,ttmatrix,t)
     return ttmatrix
 
-# def DSN(x):
-#     """Doubly stochastic normalization"""
-#     p=x.shape[0]
-#     y1=[]
-#     for i in range(p):
-#         y1.append(DSN2(x[i]))
-#     y1=torch.stack(y1,dim=0)
-#     return y1
+
+def DSN(x):
+    """Doubly stochastic normalization"""
+    p=x.shape[0]
+    y1=[]
+    for i in range(p):
+        y1.append(DSN2(x[i]))
+    y1=torch.stack(y1,dim=0)
+    return y1
+
 time1=time.time()
-y2=DSN22(t).numpy()
+y2=DSN2(t).numpy()
 time2=time.time()
 print(y2.shape)
 print('It takes',time2-time1,'s !')
 
+
+
 #%%DSN论文里算法循环实现
-"""
-t=torch.randn((3000,3000))
+
+# t=torch.randn((300,300))
 
 time1=time.time()
 a=t.sum(dim=1)
@@ -80,8 +87,17 @@ for i in range(t.shape[0]):
         tt[i,j]=t[i,j]+(lamb-a[i])*(lamb-b[j])/r
 
 ttloop=tt/tt.sum(dim=0)[0]
+ttloop=ttloop.numpy()
 time2=time.time()
 print('循环 takes',time2-time1,'s !')
+
+
+###########################
+###########################
+# 这个效果最好
+###########################
+###########################
+#%%
 """
 #%%DSN论文里算法矩阵实现
 """
@@ -96,79 +112,7 @@ b=b.expand(t.shape[0],-1)
 tt=t+(lamb**2-lamb*(a+b)+a*b)/r
 
 ttmatrix=tt/tt.sum(dim=0)[0]
+ttmatrix=ttmatrix.numpy()
 time2=time.time()
 print('矩阵 takes',time2-time1,'s !')
-"""
-
-#%%非论文实现
-def DSN21(x):
-    x_sz=list(x.shape)
-    sumr=torch.sum(x,dim=1,keepdim=True)
-    sumr=sumr.expand(-1,x_sz[1])
-    xr=x/sumr
-    y1=torch.zeros_like(x)
-    for i in range(x_sz[0]):
-        for j in range(x_sz[1]):
-            summ1=0
-            for k in range(x_sz[1]):
-                summ1=summ1+xr[i,k]*xr[j,k]/torch.sum(xr[:,k])
-            y1[i,j]=summ1
-    return y1
-
-y1=DSN21(t).numpy()
-
-#%%matlab
-# function [Xnorm,U,V] = norm_doublemean(X)
-# Represents a non-negative matrix X as X = UX'V, where U,V are diagonal
-# matrices and X' is a matrix with unity mean value along each column and
-# row
-
-def DSN(t):
-    MaxNumIterations = 10000
-        
-    # first check if the table contains zero columns or zero rows
-    if(torch.sum(torch.mean(t,dim=0))==0):
-        assert('ERROR: The matrix contains zero colums!')
-    
-    if(torch.sum(torch.mean(t,dim=1))==0):
-        assert('ERROR: The matrix contains zero rows!')
-        
-    def normalizeByColumns(t):
-        colmeans = torch.mean(t,dim=0,keepdim=True)
-        t1=t/colmeans.expand(t.shape[0],-1)
-        return t1,colmeans.squeeze()
-    
-    def normalizeByRows(t):
-        rowmeans = torch.mean(t,dim=1,keepdim=True)
-        t1=t/rowmeans.expand(-1,t.shape[1])
-        return t1,rowmeans.squeeze()
-    
-    
-    U = torch.diag(torch.ones(t.shape[0]))
-    V = torch.diag(torch.ones(t.shape[1]))
-    tnorm = t
-    
-    eps = torch.sum(torch.sum(t))
-    
-    for i in range(MaxNumIterations):
-        told = tnorm
-        tnorm,columnmeans = normalizeByColumns(tnorm)
-        #disp(tnorm)
-        V = torch.diag(columnmeans)@V
-        tnorm,rowmeans = normalizeByRows(tnorm)
-        U = U@torch.diag(rowmeans)
-        eps = torch.sum(torch.sum(abs(tnorm-told)))
-        print('step:',i,'| eps:',eps)
-        if(eps<0.001):
-            break
-        
-    tnorm=tnorm/(tnorm.sum(dim=0)[0])
-    
-    return tnorm
-
-time1=time.time()
-y=DSN(t)
-time2=time.time()
-print(y.shape)
-print('It takes',time2-time1,'s !')
 
